@@ -18,30 +18,26 @@ import { DocumentsService } from './documents.service';
 export class DocumentsController {
   constructor(private readonly documentsService: DocumentsService) {}
 
+  // ── Static routes FIRST (no param segments) ──────────────────────────────
+
   /**
    * POST /api/documents/upload
-   * Upload a PDF and start analysis pipeline
    */
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: memoryStorage(),
-      limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
+      limits: { fileSize: 20 * 1024 * 1024 },
       fileFilter: (req, file, cb) => {
         if (file.mimetype !== 'application/pdf') {
-          return cb(
-            new BadRequestException('Only PDF files are allowed'),
-            false,
-          );
+          return cb(new BadRequestException('Only PDF files are allowed'), false);
         }
         cb(null, true);
       },
     }),
   )
   async uploadDocument(@UploadedFile() file: Express.Multer.File) {
-    if (!file) {
-      throw new BadRequestException('No file provided');
-    }
+    if (!file) throw new BadRequestException('No file provided');
     const doc = await this.documentsService.uploadDocument(file);
     return {
       success: true,
@@ -54,7 +50,6 @@ export class DocumentsController {
 
   /**
    * GET /api/documents
-   * List all uploaded documents
    */
   @Get()
   async listDocuments() {
@@ -73,9 +68,11 @@ export class DocumentsController {
     };
   }
 
+  // ── Param + sub-path routes BEFORE generic :id ────────────────────────────
+
   /**
    * GET /api/documents/:id/status
-   * Poll analysis status
+   * MUST be before @Get(':id') — NestJS matches top-to-bottom
    */
   @Get(':id/status')
   async getStatus(@Param('id') id: string) {
@@ -83,9 +80,10 @@ export class DocumentsController {
     return { success: true, documentId: id, ...status };
   }
 
+  // ── Generic param routes LAST ─────────────────────────────────────────────
+
   /**
    * GET /api/documents/:id
-   * Get full document with analysis
    */
   @Get(':id')
   async getDocument(@Param('id') id: string) {
