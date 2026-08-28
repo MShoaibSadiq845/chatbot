@@ -25,12 +25,9 @@ export async function extractPdfText(
 ): Promise<PdfExtractionResult> {
   console.log('[Tool: extractPdfText] Invoked — parsing PDF buffer');
 
-  const parser = new PDFParse(new Uint8Array(buffer), {
-    verbosity: 0,
-    useSystemFonts: true,
-  });
+  const parser = new PDFParse(new Uint8Array(buffer));
 
-  const textResult = await parser.getText();
+  const textResult = await parser.getText({ useSystemFonts: true } as any);
   const infoResult = await parser.getInfo().catch(() => ({ info: {} }));
 
   const rawText = (textResult?.pages ?? [])
